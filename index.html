@@ -548,10 +548,17 @@ const RAREZAS={
 };
 const GACHA=[];
 MUNDOS.forEach((m,i)=>{const n=i+1;
-  GACHA.push({id:'obs'+n,  nombre:'Obstáculo: '+m.n, r:'comun',p:RAREZAS.comun.p/5});
+  GACHA.push({id:'obs'+n, nombre:'Obstáculo: '+m.n, r:'comun',p:5});
   GACHA.push({id:'deco'+n, nombre:'Decoración: '+m.n,r:'rara', p:RAREZAS.rara.p/5});
   GACHA.push({id:'tiro'+n, nombre:'Disparo: '+nom(i), r:'epica',p:RAREZAS.epica.p/5});
   GACHA.push({id:'boss'+n, nombre:nom(i),            r:'boss', p:RAREZAS.boss.p/5});
+});
+  // PÁJARO ESPECIAL: 25% DE PROBABILIDAD
+GACHA.push({
+  id:'pajaro2',
+  nombre:'PÁJARO ESPECIAL',
+  r:'comun',
+  p:25
 });
 GACHA.push({id:'bossfinal',nombre:'EL JEFE FINAL',r:'final',p:RAREZAS.final.p});
 const GB={volver:{x:20,y:H-58,w:130,h:44},tirar:{x:W/2-105,y:H-62,w:210,h:50},probs:{x:W-210,y:H-58,w:190,h:44}};
@@ -602,7 +609,6 @@ function dibGacha(){
   estilo();
   const cx=W/2,by=78,bs=150;
   txt('🎰 GACHA',cx,28,40);
-  txt('Es solo para jugar: no cambia nada en la partida',cx,58,18,'#777','center',null);
 
   /* últimas tiradas */
   txt('Últimas tiradas',20,92,20,INK,'left',null);
@@ -639,7 +645,7 @@ function dibGacha(){
     Object.keys(RAREZAS).forEach((key,i)=>{
       const R=RAREZAS[key],cnt=GACHA.filter(g=>g.r===key).length,y=92+i*44;
       txt(R.n+'  '+fmtP(R.p)+'%',135,y,26,R.c,'left',null);
-      txt(R.info+(cnt>1?'  (c/u '+fmtP(R.p/cnt)+'%)':''),W-135,y,18,'#555','right',null);
+      txt(R.info+(cnt>1&&key!=='comun'?'  (c/u '+fmtP(R.p/cnt)+'%)':''),W-135,y,18,'#555','right',null);
     });
     txt('(tocá para cerrar)',cx,H-34,18,'#777','center',null);
   }

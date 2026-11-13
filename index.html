@@ -423,7 +423,10 @@ function decos(dt){
 }
 function spawnObst(){
   const m=MUNDOS[G.mundo];
-  if(Math.random()<.3+.03*G.mundo){G.obst.push({t:'pajaro',x:W+30,y:GY-64,w:44,h:26,ph:0});return}
+ if(Math.random()<.65+.03*G.mundo){
+  G.obst.push({t:'pajaro',x:W+30,y:GY-64,w:44,h:26,ph:0});
+  return
+}
   const w=rnd(30,42),h=rnd(40,58);
   G.obst.push({t:'suelo',x:W+30,y:GY-h,w,h,k:m.obst});
   if(Math.random()<.2){const w2=Math.min(34,w);G.obst.push({t:'suelo',x:W+30+w+22,y:GY-h+6,w:w2,h:h-6,k:m.obst})}

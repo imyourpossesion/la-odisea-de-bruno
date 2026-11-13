@@ -159,15 +159,26 @@ MUNDOS.forEach((m,i)=>{const n=i+1,j=JEFES[i],g='Mundo '+n;
 /* jefe final del gacha (el que dibujás vos): dibujos/bossfinal.png */
 addSlot('bossfinal','Jefe final del gacha','Gacha',[130,160]);
 const IMG={};
-/* busca cada PNG en la carpeta dibujos/ y, si no está, al lado del HTML */
+
+/* Carga las imágenes desde la carpeta img */
 function cargarImg(id,rutas){
   const im=new Image();
   im.onload=()=>{IMG[id]=im};
   im.onerror=()=>{if(rutas.length>1)cargarImg(id,rutas.slice(1))};
   im.src=rutas[0];
 }
-SLOTS.forEach(s=>cargarImg(s.id,['dibujos/'+s.id+'.png',s.id+'.png','Dibujos/'+s.id+'.png']));
-cargarImg('pajaro',['dibujos/pajaro.png','pajaro.png']);   // compatibilidad: pajaro.png se usa como pajaro1
+
+SLOTS.forEach(s=>cargarImg(s.id,[
+  'img/'+s.id+'.PNG',
+  'img/'+s.id+'.png',
+  'img/'+s.id+'.PNG'.toLowerCase()
+]));
+
+cargarImg('pajaro',[
+  'img/pajaro.PNG',
+  'img/pajaro.png'
+]);
+  // compatibilidad: pajaro.png se usa como pajaro1
 function sprite(id,x,y,w,h,fo){const im=IMG[id];if(!im)return false;
   /* si la imagen es una hoja (mucho más ancha que alta) se anima cuadro por cuadro; si es un dibujo suelto se muestra entero */
   const n=FRAMES[id]||1,hoja=n>1&&im.width/im.height>=n*.75,fw=hoja?im.width/n:im.width,f=hoja?(fo!=null?fo:Math.floor(tiempo*FPS)%n):0;

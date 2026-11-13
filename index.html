@@ -168,11 +168,7 @@ function cargarImg(id,rutas){
   im.src=rutas[0];
 }
 
-SLOTS.forEach(s=>cargarImg(s.id,[
-  'img/'+s.id+'.PNG',
-  'img/'+s.id+'.png',
-  'img/'+s.id+'.PNG'.toLowerCase()
-]));
+SLOTS.forEach(s=>cargarImg(s.id,['img/'+s.id+'.PNG','img/'+s.id+'.png']));
 
 cargarImg('pajaro',[
   'img/pajaro.PNG',

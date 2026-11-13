@@ -46,7 +46,7 @@
   <button class="btn" id="bFs">⛶ Pantalla completa</button>
   <button class="btn" id="bMute">🔊 Sonido</button>
 </div>
-<p class="ayuda">Espacio / ↑ saltar · ↓ agacharse · ENTER disparar · en el menú, teclas 1–5 = ir directo a un jefe</p>
+<p class="ayuda">Espacio / ↑ saltar · ↓ agacharse · ENTER disparar · en el menú, teclas 1–5 = ir directo a un jefe · G = gacha</p>
 
 <script>
 /* =====================================================================
@@ -54,7 +54,7 @@
    Nombres de los jefes (poné el nombre de tus amigos), del juego, etc.
    ===================================================================== */
 const TITULO = 'LA ODISEA DE BRUNO';
-const FIN_TEXTO = '¡Le ganaste a todos tus amigos!';
+const FIN_TEXTO = '¡Le ganaste a los jefes!';
 const MOSTRAR_NOMBRES = false;   // false = los nombres de los jefes NO se ven en el juego (sorpresa). true = se ven.
 const nom=i=>MOSTRAR_NOMBRES?JEFES[i].nombre:'JEFE '+(i+1);
 
@@ -156,6 +156,8 @@ MUNDOS.forEach((m,i)=>{const n=i+1,j=JEFES[i],g='Mundo '+n;
   addSlot('piso'+n,'Piso (se repite)',g,BOX.piso);
   addSlot('para'+n,'Fondo lento (se repite)',g,BOX.para);
 });
+/* jefe final del gacha (el que dibujás vos): dibujos/bossfinal.png */
+addSlot('bossfinal','Jefe final del gacha','Gacha',[130,160]);
 const IMG={};
 /* busca cada PNG en la carpeta dibujos/ y, si no está, al lado del HTML */
 function cargarImg(id,rutas){
@@ -327,6 +329,7 @@ function update(dt){
   tiempo+=dt;tick=Math.floor(tiempo*8);
   shake=Math.max(0,shake-dt);flash=Math.max(0,flash-dt*1.2);
   if(estado==='menu'){G.scroll+=G.vel*dt;decos(dt);return}
+  if(estado==='gacha'){gachaUpd(dt);return}
   if(estado==='gameover'){G.tOver+=dt;return}
   if(estado==='victoria'){G.tOver+=dt;if(Math.random()<.6)G.part.push({x:rnd(0,W),y:-10,vx:rnd(-30,30),vy:rnd(80,200),l:3,max:3,c:pick(['#ffd23f','#ff6fa5','#6fd0ff','#9be37a']),k:'c',g:0});parts(dt);return}
   G.t+=dt;{const k=G.fase==='mundo'?0:G.fase==='carrera'?Math.min(1,G.t/RUN_SEG):1;G.vel=vm(G.mundo)*(1+.12*k)}  /* acelera un 12% durante la carrera */
@@ -508,6 +511,7 @@ function dibHud(){
 }
 
 const BTN={x:W/2-100,y:H-74,w:200,h:54};
+const GBTN={x:W/2+120,y:H-74,w:170,h:54};   // botón del gacha en el menú
 function dibMenu(){
   ctx.fillStyle='#fdf6d8';ctx.fillRect(0,0,W,H);
   if(IMG.portada)ctx.drawImage(IMG.portada,0,0,W,H);
@@ -515,10 +519,128 @@ function dibMenu(){
   estilo();
   poli([[BTN.x,BTN.y],[BTN.x+BTN.w,BTN.y],[BTN.x+BTN.w,BTN.y+BTN.h],[BTN.x,BTN.y+BTN.h]],'#fff6b8',3);
   txt('INICIAR',W/2,BTN.y+BTN.h/2,32,INK,'center',null);
+  poli([[GBTN.x,GBTN.y],[GBTN.x+GBTN.w,GBTN.y],[GBTN.x+GBTN.w,GBTN.y+GBTN.h],[GBTN.x,GBTN.y+GBTN.h]],'#e7d6ff',6);
+  txt('🎰 GACHA',GBTN.x+GBTN.w/2,GBTN.y+GBTN.h/2,28,INK,'center',null);
 }
+
+/* =====================================================================
+   🎰 GACHA  (solo para jugar: lo que te sale NO cambia nada en la partida)
+   Se saca con el botón GACHA del menú (o la tecla G).
+   Premios = los dibujos del juego. Imágenes: dibujos/obs1.png, deco1.png, tiro1.png, boss1.png ... y dibujos/bossfinal.png (el jefe final: el que dibujás vos)
+   ✏️ Para cambiar las probabilidades, cambiá los números "p" de acá abajo (tienen que sumar 100).
+   ===================================================================== */
+const RAREZAS={
+  comun:{n:'Común',     c:'#7a7a7a',p:50,  info:'Obstáculos de cada mundo'},
+  rara: {n:'Rara',      c:'#2f9be0',p:28,  info:'Decoraciones de cada mundo'},
+  epica:{n:'Épica',     c:'#b04fd6',p:15,  info:'Disparos de los jefes'},
+  boss: {n:'JEFE',      c:'#ff8a1f',p:6.5, info:'Los 5 jefes (muy difíciles)'},
+  final:{n:'JEFE FINAL',c:'#e22222',p:0.5, info:'El más difícil de todos'}
+};
+const GACHA=[];
+MUNDOS.forEach((m,i)=>{const n=i+1;
+  GACHA.push({id:'obs'+n,  nombre:'Obstáculo: '+m.n, r:'comun',p:RAREZAS.comun.p/5});
+  GACHA.push({id:'deco'+n, nombre:'Decoración: '+m.n,r:'rara', p:RAREZAS.rara.p/5});
+  GACHA.push({id:'tiro'+n, nombre:'Disparo: '+nom(i), r:'epica',p:RAREZAS.epica.p/5});
+  GACHA.push({id:'boss'+n, nombre:nom(i),            r:'boss', p:RAREZAS.boss.p/5});
+});
+GACHA.push({id:'bossfinal',nombre:'EL JEFE FINAL',r:'final',p:RAREZAS.final.p});
+const GB={volver:{x:20,y:H-58,w:130,h:44},tirar:{x:W/2-105,y:H-62,w:210,h:50},probs:{x:W-210,y:H-58,w:190,h:44}};
+let GX={fase:0,t:0,res:null,tmp:null,fl:0,hist:[],probs:false,n:0};   // fase: 0 esperando, 1 tirando, 2 resultado
+const fmtP=v=>(Math.round(v*10)/10)+'';
+function inR(x,y,r){return x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h}
+function abrirGacha(){estado='gacha';GX.probs=false;GX.fase=0;GX.res=null;snd(520,.1,'triangle',.04,780)}
+function gachaRoll(){
+  let tot=0;for(const it of GACHA)tot+=it.p;
+  let r=Math.random()*tot;
+  for(const it of GACHA){r-=it.p;if(r<0)return it}
+  return GACHA[0];
+}
+function gachaTirar(){
+  if(GX.fase===1)return;
+  GX.fase=1;GX.t=0;GX.fl=0;GX.res=null;GX.probs=false;
+}
+function gachaUpd(dt){
+  if(GX.fase===1){
+    GX.t+=dt;GX.fl-=dt;
+    if(GX.fl<=0){GX.fl=.07;GX.tmp=pick(GACHA);snd(300+Math.random()*300,.04,'square',.02)}
+    if(GX.t>=1.4){
+      const it=gachaRoll();
+      GX.res=it;GX.hist.unshift(it);if(GX.hist.length>6)GX.hist.pop();
+      GX.n++;GX.fase=2;GX.t=0;
+      if(it.r==='final'){flash=1;shake=.6;snd(500,.9,'triangle',.07,1300)}
+      else if(it.r==='boss'){flash=.6;shake=.3;snd(420,.5,'triangle',.06,900)}
+      else if(it.r==='epica')snd(600,.3,'triangle',.05,900);
+      else snd(400,.15,'square',.04,500);
+    }
+  }else if(GX.fase===2)GX.t+=dt;
+}
+function gachaClick(x,y){
+  if(GX.probs){GX.probs=false;return}
+  if(inR(x,y,GB.volver)){estado='menu';return}
+  if(inR(x,y,GB.probs)){GX.probs=true;return}
+  if(inR(x,y,GB.tirar))gachaTirar();
+}
+function dibItem(id,x,y,s,lab){if(!sprite(id,x,y,s,s))espacio(x,y,s,s,lab||id,id==='bossfinal'?'bossfinal.png':'')}
+function dibBtn(r,label,fill,size){
+  estilo();poli([[r.x,r.y],[r.x+r.w,r.y],[r.x+r.w,r.y+r.h],[r.x,r.y+r.h]],fill,3);
+  txt(label,r.x+r.w/2,r.y+r.h/2,size||24,INK,'center',null);
+}
+function dibGacha(){
+  ctx.fillStyle='#fdf6d8';ctx.fillRect(0,0,W,H);
+  ctx.save();
+  if(shake>0)ctx.translate(rnd(-5,5)*shake*2,rnd(-5,5)*shake*2);
+  estilo();
+  const cx=W/2,by=78,bs=150;
+  txt('🎰 GACHA',cx,28,40);
+  txt('Es solo para jugar: no cambia nada en la partida',cx,58,18,'#777','center',null);
+
+  /* últimas tiradas */
+  txt('Últimas tiradas',20,92,20,INK,'left',null);
+  GX.hist.forEach((it,i)=>txt(it.nombre,20,120+i*24,16,RAREZAS[it.r].c,'left',null));
+  txt('Tiradas: '+GX.n,W-20,92,20,INK,'right',null);
+
+  /* centro */
+  if(GX.fase===0){
+    txt('Tocá TIRAR para ver qué te toca',cx,by+bs/2,26);
+  }else if(GX.fase===1){
+    const wob=Math.sin(GX.t*45)*4;
+    ctx.globalAlpha=.9;dibItem(GX.tmp.id,cx-bs/2+wob,by,bs,'?');ctx.globalAlpha=1;
+    txt('¡Tirando...!',cx,by+bs+26,26);
+  }else if(GX.res){
+    const it=GX.res,R=RAREZAS[it.r],k=1+Math.max(0,1-GX.t*5)*.5;
+    ctx.save();ctx.globalAlpha=.22;ctx.fillStyle=R.c;ctx.beginPath();ctx.arc(cx,by+bs/2,bs*.62,0,6.3);ctx.fill();ctx.restore();
+    ctx.save();ctx.translate(cx,by+bs/2);ctx.scale(k,k);dibItem(it.id,-bs/2,-bs/2,bs,it.nombre);ctx.restore();
+    txt(it.nombre,cx,by+bs+20,26,R.c);
+    txt(R.n+' · '+fmtP(it.p)+'%',cx,by+bs+46,20,'#555','center',null);
+    if(it.r==='boss')txt('¡Te salió un jefe!',cx,by-12,26,'#ff8a1f');
+    if(it.r==='final')txt('¡¡¡EL JEFE FINAL!!!',cx,by-12,30,'#e22222');
+  }
+
+  /* botones */
+  dibBtn(GB.volver,'← VOLVER','#fff',22);
+  dibBtn(GB.tirar,GX.fase===1?'...':'🎰 TIRAR','#fff6b8',28);
+  dibBtn(GB.probs,'% PROBABILIDADES','#e7d6ff',17);
+
+  /* lista de probabilidades */
+  if(GX.probs){
+    ctx.fillStyle='rgba(253,246,216,.97)';ctx.fillRect(110,14,W-220,H-28);
+    estilo();poli([[110,14],[W-110,14],[W-110,H-14],[110,H-14]],null,9);
+    txt('PROBABILIDADES',cx,42,30);
+    Object.keys(RAREZAS).forEach((key,i)=>{
+      const R=RAREZAS[key],cnt=GACHA.filter(g=>g.r===key).length,y=92+i*44;
+      txt(R.n+'  '+fmtP(R.p)+'%',135,y,26,R.c,'left',null);
+      txt(R.info+(cnt>1?'  (c/u '+fmtP(R.p/cnt)+'%)':''),W-135,y,18,'#555','right',null);
+    });
+    txt('(tocá para cerrar)',cx,H-34,18,'#777','center',null);
+  }
+  ctx.restore();
+  if(flash>0){ctx.fillStyle='rgba(255,255,255,'+flash+')';ctx.fillRect(0,0,W,H)}
+}
+
 function render(){
   ctx.setTransform(dpr,0,0,dpr,0,0);
   if(estado==='menu'){dibMenu();return}
+  if(estado==='gacha'){dibGacha();return}
   ctx.save();
   if(shake>0)ctx.translate(rnd(-5,5)*shake*2,rnd(-5,5)*shake*2);
   if(G.prev&&G.fase==='mundo'){dibMundo(G.prev.mundo,G.prev.decos);ctx.globalAlpha=Math.min(1,G.t/FADE_SEG);dibMundo(G.mundo,G.decos);ctx.globalAlpha=1}
@@ -591,10 +713,18 @@ function saltar(){if(estado==='jugando')P.buf=.12;else if(estado!=='menu')empeza
 addEventListener('keydown',e=>{
   const k=e.key;
   if([' ','ArrowUp','ArrowDown','Enter'].includes(k))e.preventDefault();
+  if(estado==='gacha'){
+    if(k===' '||k==='Enter'){if(!e.repeat){if(GX.probs)GX.probs=false;else gachaTirar()}}
+    else if(k==='Escape'||k==='Backspace'){if(GX.probs)GX.probs=false;else estado='menu'}
+    else if(k==='p'||k==='P')GX.probs=!GX.probs;
+    else if(k==='m'||k==='M')togMute();
+    return;
+  }
   if(k===' '||k==='ArrowUp'||k==='w'||k==='W'){if(estado==='jugando')P.buf=.12;else if(!e.repeat)empezar()}
   else if(k==='ArrowDown'||k==='s'||k==='S')keys.abajo=true;
   else if(k==='Enter'){if(estado==='jugando')keys.disp=true;else if(!e.repeat)empezar()}
   else if(k==='m'||k==='M')togMute();
+  if(estado==='menu'&&(k==='g'||k==='G'))abrirGacha();
   if(estado==='menu'&&k>='1'&&k<='5')nuevo(+k-1,true);
 });
 addEventListener('keyup',e=>{
@@ -604,11 +734,13 @@ addEventListener('keyup',e=>{
 });
 cv.addEventListener('pointerdown',e=>{
   if(estado==='jugando')return;
+  const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*W,y=(e.clientY-r.top)/r.height*H;
   if(estado==='menu'){
-    const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*W,y=(e.clientY-r.top)/r.height*H;
-    if(x>=BTN.x&&x<=BTN.x+BTN.w&&y>=BTN.y&&y<=BTN.y+BTN.h)empezar();
+    if(inR(x,y,BTN))empezar();
+    else if(inR(x,y,GBTN))abrirGacha();
     return;
   }
+  if(estado==='gacha'){gachaClick(x,y);return}
   empezar();
 });
 function hold(id,on,off){
@@ -618,7 +750,7 @@ function hold(id,on,off){
 }
 hold('bSalta',()=>saltar());
 hold('bAgacha',()=>{keys.abajo=true},()=>{keys.abajo=false});
-hold('bDispara',()=>{if(estado!=='jugando'&&estado!=='menu')empezar();keys.disp=true},()=>{keys.disp=false});
+hold('bDispara',()=>{if(estado!=='jugando'&&estado!=='menu'&&estado!=='gacha')empezar();keys.disp=true},()=>{keys.disp=false});
 function togMute(){mute=!mute;document.getElementById('bMute').textContent=mute?'🔇 Sonido':'🔊 Sonido';document.getElementById('bMuteT').textContent=mute?'🔇':'🔊'}
 document.getElementById('bMute').onclick=e=>{togMute();e.target.blur()};
 document.getElementById('bMuteT').onclick=e=>{togMute();e.target.blur()};
